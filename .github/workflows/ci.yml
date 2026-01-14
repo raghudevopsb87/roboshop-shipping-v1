@@ -39,9 +39,9 @@ jobs:
         with:
           name: shipping-jar
           path: ./
-      - run: docker build -t 739561048503.dkr.ecr.us-east-1.amazonaws.com/user .
+      - run: docker build -t 739561048503.dkr.ecr.us-east-1.amazonaws.com/shipping .
         name: Docker Build
-      - run: docker push 739561048503.dkr.ecr.us-east-1.amazonaws.com/user
+      - run: docker push 739561048503.dkr.ecr.us-east-1.amazonaws.com/shipping
         name: Docker push
 
 
