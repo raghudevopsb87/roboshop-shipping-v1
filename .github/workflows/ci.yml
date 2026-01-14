@@ -1,0 +1,36 @@
+name: Shipping CI
+
+on:
+  push:
+    branches: [ "main" ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: self-hosted
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run a one-line script
+        run: mvn clean package
+
+  test:
+    needs: build
+    runs-on: self-hosted
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run a one-line script
+        run: echo mvn test ## We will not have echo command in real world. Since this is a test application there are not test cases built.
+
+  docker:
+    needs: test
+    runs-on: self-hosted
+    steps:
+      - uses: actions/checkout@v4
+      - name: Docker login
+        run: aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin 739561048503.dkr.ecr.us-east-1.amazonaws.com
+      - run: docker build -t 739561048503.dkr.ecr.us-east-1.amazonaws.com/user .
+        name: Docker Build
+      - run: docker push 739561048503.dkr.ecr.us-east-1.amazonaws.com/user
+        name: Docker push
+
+
