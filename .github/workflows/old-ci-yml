@@ -1,0 +1,100 @@
+name: Shipping CI
+
+on:
+  push:
+    branches: [ "main" ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: self-hosted
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run a one-line script
+        run: mvn clean package
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: shipping-jar
+          path: target/shipping-1.0.jar
+          retention-days: 1
+
+  test:
+    needs: build
+    runs-on: self-hosted
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run a one-line script
+        run: echo mvn test ## We will not have echo command in real world. Since this is a test application there are not test cases built.
+
+  docker:
+    needs: test
+    runs-on: self-hosted
+    steps:
+      - uses: actions/checkout@v4
+      - name: Docker login
+        run: aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin 739561048503.dkr.ecr.us-east-1.amazonaws.com
+      - name: Download artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: shipping-jar
+          path: ./
+      - run: docker build -t 739561048503.dkr.ecr.us-east-1.amazonaws.com/shipping .
+        name: Docker Build
+      - run: docker push 739561048503.dkr.ecr.us-east-1.amazonaws.com/shipping
+        name: Docker push
+
+  dev-deploy:
+    needs: docker
+    runs-on: self-hosted
+    environment: dev
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: raghudevopsb87/roboshop-helm-v1
+      - name: Get kubectl config
+        run: aws eks update-kubeconfig --name dev
+      - name: Helm deploy app
+        run: helm upgrade -i shipping . -f dev-project-values/shipping.yml
+
+  qa-deploy:
+    needs: dev-deploy
+    runs-on: self-hosted
+    environment: qa
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: raghudevopsb87/roboshop-helm-v1
+      - name: Get kubectl config
+        run: echo aws eks update-kubeconfig --name qa
+      - name: Helm deploy app
+        run: echo helm upgrade -i shipping . -f qa-project-values/shipping.yml
+
+
+  uat-deploy:
+    needs: qa-deploy
+    runs-on: self-hosted
+    environment: uat
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: raghudevopsb87/roboshop-helm-v1
+      - name: Get kubectl config
+        run: echo aws eks update-kubeconfig --name uat
+      - name: Helm deploy app
+        run: echo helm upgrade -i shipping . -f uat-project-values/shipping.yml
+
+  prod-deploy:
+    needs: uat-deploy
+    runs-on: self-hosted
+    environment: prod
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: raghudevopsb87/roboshop-helm-v1
+      - name: Get kubectl config
+        run: echo aws eks update-kubeconfig --name prod
+      - name: Helm deploy app
+        run: echo helm upgrade -i shipping . -f prod-project-values/shipping.yml
+
+
