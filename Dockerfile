@@ -8,7 +8,7 @@ RUN           sed -i 's/deb.debian.org/archive.debian.org/g' /etc/apt/sources.li
 RUN           useradd -d /app -m roboshop
 USER          roboshop
 WORKDIR       /app
-ADD           https://download.newrelic.com/newrelic/java-agent/newrelic-agent/current/newrelic-java.zip /app/
+ADD           --chown roboshop --chmod 444 https://download.newrelic.com/newrelic/java-agent/newrelic-agent/current/newrelic-java.zip /app/
 RUN           unzip newrelic-java.zip
 COPY          ./shipping-1.0.jar /app/shipping.jar
 COPY          ./nrb64 /app/
